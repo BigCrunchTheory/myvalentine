@@ -3,6 +3,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const noBtn = document.getElementById("runawayBtn");
     const header = document.querySelector("h1");
     
+    // ========== НАСТРОЙКИ СКОРОСТИ ==========
+    const RUNAWAY_SPEED = 300;      // Как далеко убегает от мыши (чем больше, тем быстрее)
+    const CLICK_JUMP = 500;         // Как далеко отпрыгивает при клике
+    const JITTER = 120;            // Дёрганье (хаотичность движения)
+    // ========================================
+    
     // Массив фраз для кнопки "Нет"
     const noClickMessages = [
         "не попала",
@@ -29,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageElement.className = 'no-btn-message';
     messageElement.textContent = noClickMessages[0];
     
-    // ОЧЕНЬ ВАЖНО: добавляем сообщение ВНУТРЬ кнопки "Нет"
+    // Добавляем сообщение ВНУТРЬ кнопки "Нет"
     noBtn.appendChild(messageElement);
     
     // Изначально позиционируем кнопки
@@ -65,42 +71,42 @@ document.addEventListener("DOMContentLoaded", () => {
         yesBtn.style.zIndex = "100";
         noBtn.style.zIndex = "100";
         
-        // Убеждаемся, что кнопка имеет position relative для абсолютного позиционирования текста
-        noBtn.style.position = "fixed";
-        noBtn.style.position = "relative"; // Переопределяем для внутреннего позиционирования
+        // Для внутреннего позиционирования текста
+        noBtn.style.position = "relative";
     }
     
     positionButtons();
     
-    // Плавное движение кнопки
-    let animationFrame;
+    // ========== ТУРБО-РЕЖИМ: ОБРАБОТЧИК ДВИЖЕНИЯ ==========
     noBtn.addEventListener("mousemove", (event) => {
-        if (animationFrame) {
-            cancelAnimationFrame(animationFrame);
-        }
+        const btnRect = noBtn.getBoundingClientRect();
         
-        animationFrame = requestAnimationFrame(() => {
-            const btnRect = noBtn.getBoundingClientRect();
-            const maxDistance = 100;
-            
-            const mouseX = event.clientX - (btnRect.left + btnRect.width / 2);
-            const mouseY = event.clientY - (btnRect.top + btnRect.height / 2);
-            
-            const deltaX = mouseX > 0 ? -maxDistance : maxDistance;
-            const deltaY = mouseY > 0 ? -maxDistance : maxDistance;
-            
-            let newX = btnRect.left + deltaX;
-            let newY = btnRect.top + deltaY;
-            
-            newX = Math.max(0, Math.min(newX, window.innerWidth - btnRect.width));
-            newY = Math.max(0, Math.min(newY, window.innerHeight - btnRect.height));
-            
-            noBtn.style.left = `${newX}px`;
-            noBtn.style.top = `${newY}px`;
-        });
+        // Вычисляем положение мыши относительно центра кнопки
+        const mouseX = event.clientX - (btnRect.left + btnRect.width / 2);
+        const mouseY = event.clientY - (btnRect.top + btnRect.height / 2);
+        
+        // СУПЕР-СИЛЬНОЕ отталкивание
+        const deltaX = mouseX > 0 ? -RUNAWAY_SPEED : RUNAWAY_SPEED;
+        const deltaY = mouseY > 0 ? -RUNAWAY_SPEED : RUNAWAY_SPEED;
+        
+        // Дёргается в разные стороны (хаотичность)
+        const jitterX = (Math.random() - 0.5) * JITTER;
+        const jitterY = (Math.random() - 0.5) * JITTER;
+        
+        // Вычисляем новую позицию с дёрганьем
+        let newX = btnRect.left + deltaX + jitterX;
+        let newY = btnRect.top + deltaY + jitterY;
+        
+        // Ограничиваем экраном
+        newX = Math.max(0, Math.min(newX, window.innerWidth - btnRect.width));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - btnRect.height));
+        
+        // Мгновенное перемещение (без requestAnimationFrame для максимальной скорости)
+        noBtn.style.left = `${newX}px`;
+        noBtn.style.top = `${newY}px`;
     });
     
-    // ОБРАБОТЧИК НАЖАТИЯ НА КНОПКУ "НЕТ"
+    // ========== ТУРБО-РЕЖИМ: ОБРАБОТЧИК КЛИКА ==========
     noBtn.addEventListener("click", (event) => {
         event.stopPropagation();
         
@@ -108,20 +114,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const message = noClickMessages[messageIndex];
         messageElement.textContent = message;
         
-        // ДЕЛАЕМ ТЕКСТ ВИДИМЫМ
+        // Делаем текст видимым
         messageElement.style.opacity = '1';
         
         // Увеличиваем индекс
         messageIndex = (messageIndex + 1) % noClickMessages.length;
         
-        // Отпрыгивание
+        // МОЩНЫЙ ВЗРЫВНОЙ ОТСКОК ПРИ КЛИКЕ
         const btnRect = noBtn.getBoundingClientRect();
-        const randomX = (Math.random() > 0.5 ? 1 : -1) * 150;
-        const randomY = (Math.random() > 0.5 ? 1 : -1) * 150;
         
-        let newX = btnRect.left + randomX;
-        let newY = btnRect.top + randomY;
+        // Супер-сила отскока в случайном направлении
+        const randomX = (Math.random() > 0.5 ? 1 : -1) * CLICK_JUMP;
+        const randomY = (Math.random() > 0.5 ? 1 : -1) * CLICK_JUMP;
         
+        // ДОПОЛНИТЕЛЬНЫЙ ХАОС — кнопка ведёт себя непредсказуемо
+        const chaosX = (Math.random() - 0.5) * 200;
+        const chaosY = (Math.random() - 0.5) * 200;
+        
+        let newX = btnRect.left + randomX + chaosX;
+        let newY = btnRect.top + randomY + chaosY;
+        
+        // Ограничиваем экраном
         newX = Math.max(0, Math.min(newX, window.innerWidth - btnRect.width));
         newY = Math.max(0, Math.min(newY, window.innerHeight - btnRect.height));
         
@@ -166,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
         noBtn.disabled = true;
     });
     
+    // Обновляем позиции при изменении размера окна
     window.addEventListener("resize", () => {
         positionButtons();
     });
